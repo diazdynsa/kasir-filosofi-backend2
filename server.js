@@ -11,7 +11,7 @@ app.use(express.static('public'));
 
 // --- KONEKSI KE SUPABASE (POSTGRESQL) ---
 // 👇👇 PASTE LINK SUPABASE DI SINI 👇👇
-const connectionString = 'postgresql://postgres.mfdhpnjspbbinexxnayz:[YOUR-PASSWORD]@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres'
+const connectionString = 'postgresql://postgres.mfdhpnjspbbinexxnayz:Dynsaputra09@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres'
 
 
 const pool = new Pool({
