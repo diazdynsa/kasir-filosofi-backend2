@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filosofi Kopi - Backend System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Lora:wght@500;600&family=Courier+Prime&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* --- 1. CONFIGURATION & VARIABLES --- */
+        :root {
+            --bg-app: #12100e;       
+            --panel-bg: #1f1b18;     
+            --border: #38302a; 
+            --text: #e6dace;    
+            --text-muted: #9c8e85;   
+            --accent: #d4a373;       
+            --accent-hover: #faedcd; 
+            --danger: #8c3b3b;
+            --success: #588157;       
+            --font-ui: 'Poppins', sans-serif;
+            --font-head: 'Lora', serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
+
+        body {
+            font-family: var(--font-ui);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            transition: background 0.5s ease;
+        }
+
+        /* --- MODE TAMPILAN --- */
+        body.login-mode {
+            background: url('https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?q=80&w=2070&auto=format&fit=crop') no-repeat center center fixed;
+            background-size: cover;
+        }
+        body.login-mode::before {
+            content: ''; position: absolute; inset: 0;
+            background: rgba(20, 10, 5, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: -1;
+        }
+        body.app-mode {
+            background-color: var(--bg-app);
+            background-image: none;
+        }
+        body.app-mode::before { display: none; }
+
+        /* --- COMPONENTS --- */
+        .hidden { display: none !important; }
+        
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .panel:hover {
+            border-color: rgba(212, 163, 115, 0.3);
+        }
+
+        .btn {
+            padding: 8px 15px; border-radius: 6px; border: none; cursor: pointer;
+            font-weight: 600; font-family: var(--font-ui); display: inline-flex; align-items: center; gap: 8px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); font-size: 0.9rem;
+        }
+        .btn:active { transform: scale(0.95); }
+        .btn-primary { background: var(--accent); color: #2b1d0e; }
+        .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 0 15px rgba(212, 163, 115, 0.4); }
+        .btn-danger { background: rgba(140, 59, 59, 0.2); border: 1px solid var(--danger); color: #ff8585; }
+        .btn-danger:hover { background: var(--danger); color: #fff; }
+
+        input, select {
+            background: #2a2420; border: 1px solid var(--border);
+            padding: 12px; border-radius: 8px; color: var(--text); width: 100%; margin-bottom: 15px;
+            transition: 0.3s ease;
+        }
+        input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(212, 163, 115, 0.1); }
+
+        /* --- ANIMASI TRANSISI HALAMAN (HANYA UNTUK KONTEN UTAMA) --- */
+        /* PERUBAHAN DISINI: Hanya section di dalam 'main' yang kena animasi */
+        main section:not(.hidden) {
+            animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeSlideUp {
+            0% { opacity: 0; transform: translateY(20px) scale(0.98); filter: blur(5px); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+
+        /* --- LOGIN FORM (NO ANIMATION) --- */
+        #login-section {
+            width: 100%; max-width: 400px;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            padding: 40px; text-align: center;
+            border-top: 4px solid var(--accent);
+            /* Animasi dihapus agar statis */
+        }
+        .login-title { font-family: var(--font-head); font-size: 2rem; color: var(--accent); margin-bottom: 5px; }
+
+        /* --- LAYOUT UTAMA --- */
+        #app-container { display: flex; height: 100vh; }
+
+        .sidebar {
+            width: 260px; background: #181512; border-right: 1px solid var(--border);
+            padding: 25px 20px; display: flex; flex-direction: column;
+        }
+        .brand { font-family: var(--font-head); font-size: 1.6rem; color: var(--accent); margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+        
+        .nav-item {
+            padding: 12px 15px; margin-bottom: 8px; border-radius: 10px; cursor: pointer;
+            color: var(--text-muted); display: flex; align-items: center; gap: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden;
+        }
+        .nav-item:hover { background: rgba(212, 163, 115, 0.05); color: var(--text); padding-left: 20px; }
+        .nav-item.active { background: rgba(212, 163, 115, 0.15); color: var(--accent); font-weight: 600; }
+        .nav-item.active::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+            background: var(--accent); border-radius: 0 4px 4px 0;
+            animation: slideInLeft 0.3s ease;
+        }
+        @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+
+        .content { flex: 1; padding: 25px; overflow-y: auto; background: var(--bg-app); }
+        
+        /* Dashboard Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .stat-card { padding: 25px; display: flex; align-items: center; gap: 20px; }
+        .stat-icon { font-size: 3rem; color: var(--accent); opacity: 0.4; transition: 0.3s; }
+        .stat-card:hover .stat-icon { transform: scale(1.1) rotate(5deg); opacity: 1; }
+
+        /* Product Grid (POS) */
+        .pos-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; height: calc(100vh - 100px); }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; overflow-y: auto; padding-right: 5px; align-content: start; }
+        .product-card { padding: 20px; text-align: center; cursor: pointer; transition: 0.3s; border: 1px solid transparent; position: relative; }
+        .product-card:hover { border-color: var(--accent); background: #2f2823; transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        
+        .cat-coffee { color: #d4a373; }
+        .cat-non-coffee { color: #81b29a; }
+        .cat-food { color: #e07a5f; }
+        .cat-snack { color: #f2cc8f; }
+
+        /* Cart */
+        .cart-panel { display: flex; flex-direction: column; height: 100%; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #333; animation: slideInRight 0.3s ease; }
+        @keyframes slideInRight { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
+        .total-section { margin-top: auto; padding-top: 20px; border-top: 2px solid var(--border); }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { text-align: left; padding: 15px; color: var(--accent); border-bottom: 1px solid var(--border); }
+        td { padding: 15px; border-bottom: 1px solid #2a2420; color: var(--text-muted); vertical-align: middle; }
+        tr { transition: 0.2s; }
+        tr:hover td { background: rgba(255,255,255,0.02); color: var(--text); }
+        
+        /* Modal General */
+        .modal { 
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+            display: flex; justify-content: center; align-items: center; z-index: 100;
+            backdrop-filter: blur(5px); animation: fadeIn 0.3s ease;
+        }
+        .modal-box { 
+            width: 420px; padding: 35px; position: relative; border-top: 4px solid var(--accent);
+            animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* --- TOAST NOTIFICATION --- */
+        #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; }
+        .toast {
+            background: var(--accent); color: #12100e;
+            padding: 12px 24px; margin-top: 10px; border-radius: 8px; font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 10px;
+            animation: slideInToast 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), fadeOut 0.5s ease 2.5s forwards; min-width: 250px;
+        }
+        @keyframes slideInToast { from { transform: translateX(120%); } to { transform: translateX(0); } }
+        @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+
+        /* --- PRINTABLE RECEIPT --- */
+        #printable-area { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #printable-area, #printable-area * { visibility: visible; }
+            #printable-area {
+                display: block; position: absolute; left: 0; top: 0; width: 80mm;
+                padding: 10px; background: white; color: black; font-family: 'Courier Prime', monospace; font-size: 12px;
+            }
+            body { background: white; }
+        }
+    </style>
+</head>
+<body class="login-mode">
+
+    <section id="login-section" class="panel">
+        <div class="login-title"><i class="fas fa-mug-hot"></i> Filosofi Kopi</div>
+        <p style="color:var(--text-muted); margin-bottom: 25px;">Sistem Kasir Backend Integration</p>
+        <form onsubmit="handleLogin(event)">
+            <input type="text" id="username" placeholder="Username (admin / user)" required>
+            <input type="password" id="password" placeholder="Password (123)" required>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">MASUK <i class="fas fa-arrow-right"></i></button>
+        </form>
+        <div style="margin-top: 15px; font-size: 0.8rem; color: #666;">*User: admin (Full) | user (Kasir Only)</div>
+    </section>
+
+    <div id="app-container" class="hidden">
+        <aside class="sidebar">
+            <div class="brand"><i class="fas fa-mug-hot"></i> Filosofi</div>
+            <nav>
+                <div class="nav-item active" onclick="nav('dashboard')"><i class="fas fa-chart-pie"></i> Dashboard</div>
+                <div class="nav-item" id="nav-inventory" onclick="nav('inventory')"><i class="fas fa-boxes-stacked"></i> Inventori</div>
+                <div class="nav-item" onclick="nav('pos')"><i class="fas fa-cash-register"></i> Kasir</div>
+                <div class="nav-item" onclick="logout()" style="margin-top: auto; color: var(--danger);"><i class="fas fa-power-off"></i> Keluar</div>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <section id="view-dashboard">
+                <h2 style="color:var(--accent); font-family:var(--font-head)">Overview Hari Ini</h2>
+                <div class="stats-grid" style="margin-top:20px;">
+                    <div class="panel stat-card">
+                        <i class="fas fa-box-open stat-icon"></i>
+                        <div><h2 id="d-prod" style="color:white">0</h2><span style="color:var(--text-muted)">Total Produk</span></div>
+                    </div>
+                    <div class="panel stat-card">
+                        <i class="fas fa-receipt stat-icon"></i>
+                        <div><h2 id="d-sale" style="color:white">0</h2><span style="color:var(--text-muted)">Transaksi</span></div>
+                    </div>
+                    <div class="panel stat-card">
+                        <i class="fas fa-coins stat-icon"></i>
+                        <div><h2 id="d-rev" style="color:var(--accent)">Rp 0</h2><span style="color:var(--text-muted)">Omset Masuk</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-inventory" class="hidden">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2 style="color:var(--accent)">Manajemen Menu</h2>
+                    <button class="btn btn-primary" onclick="openModal(true)"><i class="fas fa-plus"></i> Menu Baru</button>
+                </div>
+                <div class="panel" style="margin-top:20px;">
+                    <table>
+                        <thead><tr><th>Nama Menu</th><th>Kategori</th><th>Harga</th><th>Stok</th><th>Aksi</th></tr></thead>
+                        <tbody id="inv-list"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="view-pos" class="hidden">
+                <div class="pos-layout">
+                    <div>
+                        <input type="text" id="search-pos" placeholder="Cari pesanan..." onkeyup="renderProducts('pos')">
+                        <div class="product-grid" id="pos-grid"></div>
+                    </div>
+                    <div class="panel cart-panel" style="padding: 20px;">
+                        <h3 style="color:var(--accent); border-bottom:1px solid #333; padding-bottom:15px;"><i class="fas fa-receipt"></i> Pesanan</h3>
+                        <div id="cart-list" style="flex:1; overflow-y:auto; margin-top:10px;"></div>
+                        <div class="total-section">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:15px; font-size:1.2rem; font-weight:bold;">
+                                <span>Total:</span><span id="cart-total" style="color:var(--accent)">Rp 0</span>
+                            </div>
+                            <button class="btn btn-primary" style="width:100%; justify-content:center;" onclick="requestCheckout()"><i class="fas fa-wallet"></i> BAYAR & CETAK</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="modal-form" class="modal hidden">
+        <div class="panel modal-box">
+            <span onclick="document.getElementById('modal-form').classList.add('hidden')" style="position:absolute; right:20px; top:20px; cursor:pointer; font-size:1.5rem;">&times;</span>
+            <h3 style="color:var(--accent); margin-bottom:20px;" id="modal-title">Form Data Menu</h3>
+            <form onsubmit="saveProduct(event)">
+                <input type="hidden" id="p-id">
+                <input type="text" id="p-name" placeholder="Nama Menu" required>
+                <select id="p-cat">
+                    <option value="Coffee">Coffee Base</option><option value="Non-Coffee">Non-Coffee</option>
+                    <option value="Makanan">Makanan Berat</option><option value="Snack">Camilan/Snack</option>
+                </select>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <input type="number" id="p-price" placeholder="Harga" required>
+                    <input type="number" id="p-stock" placeholder="Stok Awal" required>
+                </div>
+                <button class="btn btn-primary" style="width:100%">SIMPAN DATA</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-confirm" class="modal hidden">
+        <div class="panel modal-box" style="text-align:center;">
+            <i class="fas fa-circle-question" style="font-size:3rem; color:var(--accent); margin-bottom:15px;"></i>
+            <h3 style="color:white; margin-bottom:10px;">Konfirmasi Transaksi</h3>
+            <p style="color:var(--text-muted); margin-bottom:20px;">Total tagihan <span id="conf-total" style="color:var(--accent); font-weight:bold;"></span>. Lanjutkan proses pembayaran?</p>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                <button class="btn btn-danger" onclick="closeConfirm()" style="justify-content:center;">BATAL</button>
+                <button class="btn btn-primary" onclick="processTransaction()" style="justify-content:center;">PROSES</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="printable-area">
+        <div style="text-align:center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px;">
+            <h3 style="margin:0;">FILOSOFI KOPI</h3><p style="margin:0; font-size:10px;">Jl. Senja Utama No. 1, Bandung</p>
+        </div>
+        <div id="print-items"></div>
+        <div style="border-top: 1px dashed #000; padding-top: 5px; margin-top: 10px; text-align:right;"><p><strong>TOTAL: <span id="print-total"></span></strong></p></div>
+        <div style="text-align:center; margin-top: 20px; font-size: 10px;">--- Terima Kasih ---<br><span id="print-date"></span></div>
+    </div>
+    <div id="toast-container"></div>
+
+    <script>
+        let products = [];
+        let cart = [];
+        let role = '';
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            let icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            let color = type === 'success' ? 'var(--accent)' : 'var(--danger';
+            let textColor = type === 'success' ? '#12100e' : '#fff';
+            toast.style.background = color; toast.style.color = textColor;
+            toast.innerHTML = `<i class="fas ${icon}"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            if (p === '123' && (u === 'admin' || u === 'user')) {
+                role = u; initApp();
+            } else { showToast('Login Gagal!', 'error'); }
+        }
+
+        function initApp() {
+            document.body.classList.remove('login-mode'); document.body.classList.add('app-mode');
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            
+            if(role === 'user') {
+                document.getElementById('nav-inventory').style.display = 'none';
+                nav('pos');
+            } else {
+                document.getElementById('nav-inventory').style.display = 'flex';
+                nav('dashboard');
+            }
+            fetchData();
+        }
+
+        function logout() { location.reload(); }
+
+        async function fetchData() {
+            try {
+                const res = await fetch('/api/products');
+                products = await res.json();
+                renderProducts('pos');
+                if(role === 'admin') renderProducts('inv');
+                fetchDashboard();
+            } catch (err) { alert("Gagal koneksi server!"); }
+        }
+
+        async function fetchDashboard() {
+            const res = await fetch('/api/dashboard');
+            const data = await res.json();
+            document.getElementById('d-prod').innerText = data.totalProducts;
+            document.getElementById('d-sale').innerText = data.todaySales;
+            document.getElementById('d-rev').innerText = fmtRp(data.todayRevenue);
+        }
+
+        function renderProducts(view) {
+            if (view === 'pos') {
+                const container = document.getElementById('pos-grid');
+                const search = document.getElementById('search-pos').value.toLowerCase();
+                container.innerHTML = '';
+                products.filter(p => p.name.toLowerCase().includes(search) && p.stock > 0).forEach(p => {
+                    let icon = 'fa-mug-hot cat-coffee';
+                    if(p.cat === 'Non-Coffee') icon = 'fa-glass-water cat-non-coffee';
+                    if(p.cat === 'Makanan') icon = 'fa-utensils cat-food';
+                    if(p.cat === 'Snack') icon = 'fa-cookie-bite cat-snack';
+
+                    container.innerHTML += `
+                        <div class="panel product-card" onclick="addToCart(${p.id})">
+                            <i class="fas ${icon}" style="font-size:2.5rem; margin-bottom:10px;"></i>
+                            <div style="font-weight:600; font-size:0.9rem">${p.name}</div>
+                            <div style="color:var(--accent); font-weight:bold">${fmtRp(p.price)}</div>
+                            <div style="font-size:0.8rem; color:#666">Stok: ${p.stock}</div>
+                        </div>`;
+                });
+            } else {
+                const tbody = document.getElementById('inv-list');
+                tbody.innerHTML = '';
+                products.forEach(p => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${p.name}</td>
+                            <td><span style="background:#333; padding:3px 8px; border-radius:4px; font-size:0.8rem">${p.cat}</span></td>
+                            <td>${fmtRp(p.price)}</td>
+                            <td>${p.stock}</td>
+                            <td>
+                                <button onclick="editProduct(${p.id})" class="btn-primary" style="padding:6px 10px; margin-right:5px;"><i class="fas fa-pen"></i></button>
+                                <button onclick="deleteProduct(${p.id})" class="btn-danger" style="padding:6px 10px;"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>`;
+                });
+            }
+        }
+
+        function addToCart(id) {
+            const prod = products.find(p => p.id === id);
+            const exist = cart.find(c => c.id === id);
+            if(exist) {
+                if(exist.qty < prod.stock) {
+                    exist.qty++; showToast(`${prod.name} +1 (Total: ${exist.qty})`);
+                } else { showToast('Stok habis!', 'error'); }
+            } else {
+                cart.push({...prod, qty:1}); showToast(`${prod.name} masuk keranjang`);
+            }
+            renderCart();
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-list');
+            list.innerHTML = '';
+            let total = 0;
+            cart.forEach((c, idx) => {
+                total += c.price * c.qty;
+                list.innerHTML += `
+                    <div class="cart-item">
+                        <div><div style="font-weight:600">${c.name}</div><div style="font-size:0.8rem; color:#888">${c.qty} x ${fmtRp(c.price)}</div></div>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span style="color:var(--accent)">${fmtRp(c.price*c.qty)}</span>
+                            <i class="fas fa-times" onclick="cart.splice(${idx},1); renderCart()" style="color:var(--danger); cursor:pointer;"></i>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('cart-total').innerText = fmtRp(total);
+        }
+
+        function requestCheckout() {
+            if(cart.length === 0) return showToast("Keranjang kosong!", 'error');
+            const total = cart.reduce((sum, c) => sum + (c.price * c.qty), 0);
+            document.getElementById('conf-total').innerText = fmtRp(total);
+            document.getElementById('modal-confirm').classList.remove('hidden');
+        }
+
+        function closeConfirm() { document.getElementById('modal-confirm').classList.add('hidden'); }
+
+        async function processTransaction() {
+            closeConfirm();
+            const total = cart.reduce((sum, c) => sum + (c.price * c.qty), 0);
+            const res = await fetch('/api/transaction', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ items: cart, total: total })
+            });
+            
+            const result = await res.json();
+            if(result.success) {
+                printReceipt(total);
+                showToast('Transaksi Berhasil! Mencetak...', 'success');
+                cart = []; renderCart(); fetchData();
+            } else { showToast("Gagal: " + result.error, 'error'); }
+        }
+
+        function printReceipt(total) {
+            const printDiv = document.getElementById('print-items');
+            printDiv.innerHTML = '';
+            cart.forEach(c => {
+                printDiv.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;"><span>${c.name} x${c.qty}</span><span>${fmtRp(c.price * c.qty)}</span></div>`;
+            });
+            document.getElementById('print-total').innerText = fmtRp(total);
+            document.getElementById('print-date').innerText = new Date().toLocaleString();
+            window.print();
+        }
+
+        async function saveProduct(e) {
+            e.preventDefault();
+            const data = {
+                id: document.getElementById('p-id').value || null,
+                name: document.getElementById('p-name').value, cat: document.getElementById('p-cat').value,
+                price: document.getElementById('p-price').value, stock: document.getElementById('p-stock').value
+            };
+            await fetch('/api/products', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            document.getElementById('modal-form').classList.add('hidden');
+            showToast('Data berhasil disimpan');
+            fetchData();
+        }
+
+        function editProduct(id) {
+            const p = products.find(x => x.id === id);
+            if(!p) return;
+            document.getElementById('p-id').value = p.id;
+            document.getElementById('p-name').value = p.name;
+            document.getElementById('p-cat').value = p.cat;
+            document.getElementById('p-price').value = p.price;
+            document.getElementById('p-stock').value = p.stock;
+            document.getElementById('modal-title').innerText = "Edit Menu";
+            document.getElementById('modal-form').classList.remove('hidden');
+        }
+
+        async function deleteProduct(id) {
+            if(confirm("Hapus produk?")) {
+                await fetch('/api/products/' + id, { method: 'DELETE' });
+                showToast('Produk dihapus');
+                fetchData();
+            }
+        }
+
+        function openModal(isNew = false) { 
+            if(isNew) {
+                document.getElementById('p-id').value = '';
+                document.getElementById('p-name').value = '';
+                document.getElementById('p-price').value = '';
+                document.getElementById('p-stock').value = '';
+                document.getElementById('modal-title').innerText = "Tambah Menu Baru";
+            }
+            document.getElementById('modal-form').classList.remove('hidden'); 
+        }
+
+        function nav(id) {
+            ['dashboard','pos','inventory'].forEach(v => document.getElementById('view-'+v).classList.add('hidden'));
+            document.getElementById('view-'+id).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            event.currentTarget?.classList.add('active');
+        }
+        function fmtRp(n) { return 'Rp ' + n.toLocaleString('id-ID'); }
+    </script>
+</body>
+</html>
